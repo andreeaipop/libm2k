@@ -75,7 +75,7 @@ public:
 		scanAllAnalogOut();
 		scanAllPowerSupply();
 		scanAllDigital();
-		m_calibration = new M2kCalibration(ctx, getAnalogIn(), getAnalogOut());
+		m_calibration = new M2kCalibration(ctx, getAnalogIn(), getAnalogOut(), getDMM("ad9963"));
 	}
 
 	~M2kImpl()
@@ -197,6 +197,31 @@ public:
 	bool resetCalibration()
 	{
 		return m_calibration->resetCalibration();
+	}
+
+	std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> getCalibrationParameters()
+	{
+		return m_calibration->getCalibrationParameters();
+	}
+
+	void setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters)
+	{
+		m_calibration->setCalibrationParameters(calibrationParameters);
+	}
+
+	bool calibrateADCFromFile(const std::string &path)
+	{
+		return m_calibration->calibrateADC(getSerialNumber(), path);
+	}
+
+	bool calibrateDACFromFile(const std::string &path)
+	{
+		return m_calibration->calibrateDAC(getSerialNumber(), path);
+	}
+
+	bool calibrateAllFromFile(const std::string &path)
+	{
+		return m_calibration->calibrateAll(getSerialNumber(), path);
 	}
 
 	bool calibrateADC()

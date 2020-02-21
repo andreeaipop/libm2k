@@ -25,6 +25,8 @@
 #include <libm2k/m2kglobal.hpp>
 #include <libm2k/context.hpp>
 #include <iostream>
+#include <map>
+#include "enums.hpp"
 
 namespace libm2k {
 namespace analog {
@@ -137,6 +139,42 @@ public:
 	* @private
 	*/
 	bool resetCalibration();
+
+	/**
+	 * @brief Get all m2k calibration parameters
+	 * @return a map containing the values of all m2k calibration parameters
+	 */
+	std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> getCalibrationParameters();
+
+	/**
+	 * @brief Set m2k calibration parameters
+	 * @param calibrationParameters map <key, val>, where key is the parameter and val is the value to be set
+	 */
+	void setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters);
+
+
+	/**
+	 * @brief Calibrate the ADC using a given file to extract the values of the calibration parameters
+	 * @param path the path of the file; default file: calibration_<serial_number>
+	 * @return true if the calibration succeeded, otherwise false
+	 */
+	bool calibrateADCFromFile(const std::string &path = std::string());
+
+
+	/**
+	 * @brief Calibrate both DACs using a given file to extract the values of the calibration parameters
+	 * @param path the path of the file; default file: calibration_<serial_number>
+	 * @return true if the calibration succeeded, otherwise false
+	 */
+	bool calibrateDACFromFile(const std::string &path = std::string());
+
+
+	/**
+	 * @brief Calibrate the ADC and the DACs using a given file to extract the values of the calibration parameters
+	 * @param path the path of the file; default file: calibration_<serial_number>
+	 * @return true if the calibration succeeded, otherwise false
+	 */
+	bool calibrateAllFromFile(const std::string &path = std::string());
 
 
 	/**

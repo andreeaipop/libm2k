@@ -50,6 +50,21 @@ namespace libm2k {
 	};
 
 	/**
+	 * @enum CALIBRATION_PARAMETER
+	 * @brief Calibration parameters of m2k
+	 */
+	 enum CALIBRATION_PARAMETER {
+		ADC_OFFSET_CH_1,
+		ADC_OFFSET_CH_2,
+		ADC_GAIN_CH_1,
+		ADC_GAIN_CH_2,
+		DAC_A_OFFSET,
+		DAC_B_OFFSET,
+		DAC_A_VLSB,
+		DAC_B_VLSB
+	 };
+
+	/**
 	 * @private
 	 */
 	enum GAIN_MODE {

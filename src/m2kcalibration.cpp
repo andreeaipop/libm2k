@@ -26,8 +26,8 @@ using namespace libm2k::analog;
 using namespace libm2k::utils;
 
 M2kCalibration::M2kCalibration(struct iio_context* ctx, M2kAnalogIn* analogIn,
-			       M2kAnalogOut* analogOut):
-	m_pimpl(std::unique_ptr<M2kCalibrationImpl>(new M2kCalibrationImpl(ctx, analogIn, analogOut)))
+			       M2kAnalogOut* analogOut, DMM *dmm):
+	m_pimpl(std::unique_ptr<M2kCalibrationImpl>(new M2kCalibrationImpl(ctx, analogIn, analogOut, dmm)))
 {
 }
 
@@ -164,3 +164,27 @@ bool M2kCalibration::setCalibrationMode(int mode)
 	return m_pimpl->setCalibrationMode(mode);
 }
 
+std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> M2kCalibration::getCalibrationParameters()
+{
+	return m_pimpl->getCalibrationParameters();
+}
+
+void M2kCalibration::setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters)
+{
+	m_pimpl->setCalibrationParameters(calibrationParameters);
+}
+
+bool M2kCalibration::calibrateADC(const std::string &serialNumber, const std::string &path)
+{
+	return m_pimpl->calibrateADC(serialNumber, path);
+}
+
+bool M2kCalibration::calibrateDAC(const std::string &serialNumber, const std::string &path)
+{
+	return m_pimpl->calibrateDAC(serialNumber, path);
+}
+
+bool M2kCalibration::calibrateAll(const std::string &serialNumber, const std::string &path)
+{
+	return m_pimpl->calibrateAll(serialNumber, path);
+}

@@ -92,6 +92,31 @@ bool M2k::resetCalibration()
 	return m_pimpl->resetCalibration();
 }
 
+std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> M2k::getCalibrationParameters()
+{
+	return m_pimpl->getCalibrationParameters();
+}
+
+void M2k::setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters)
+{
+	m_pimpl->setCalibrationParameters(calibrationParameters);
+}
+
+bool M2k::calibrateADCFromFile(const std::string &path)
+{
+	return m_pimpl->calibrateADCFromFile(path);
+}
+
+bool M2k::calibrateDACFromFile(const std::string &path)
+{
+	return m_pimpl->calibrateDACFromFile(path);
+}
+
+bool M2k::calibrateAllFromFile(const std::string &path)
+{
+	return m_pimpl->calibrateAllFromFile(path);
+}
+
 bool M2k::calibrateADC()
 {
 	return m_pimpl->calibrateADC();

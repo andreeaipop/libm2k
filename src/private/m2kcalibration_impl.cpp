@@ -24,6 +24,7 @@
 #include <libm2k/utils/devicegeneric.hpp>
 #include <libm2k/analog/m2kanalogout.hpp>
 #include <libm2k/analog/m2kanalogin.hpp>
+#include <libm2k/analog/dmm.hpp>
 #include <libm2k/m2kexceptions.hpp>
 #include <libm2k/utils/utils.hpp>
 #include <libm2k/enums.hpp>
@@ -34,6 +35,8 @@
 #include <thread>
 #include <chrono>
 #include <cmath>
+#include <fstream>
+#include <sstream>
 
 using namespace libm2k;
 using namespace libm2k::analog;
@@ -42,12 +45,13 @@ using namespace libm2k::utils;
 class M2kCalibration::M2kCalibrationImpl {
 public:
 	M2kCalibrationImpl(struct iio_context* ctx, M2kAnalogIn* analogIn,
-				       M2kAnalogOut* analogOut):
+				       M2kAnalogOut* analogOut, DMM *dmm):
 		m_cancel(false),
 		m_ctx(ctx),
 		m_m2k_adc(analogIn),
 		m_m2k_dac(analogOut),
 		m_m2k_trigger(analogIn->getTrigger()),
+		m_dmm(dmm),
 		m_adc_calibrated(false),
 		m_dac_calibrated(false),
 		m_initialized(false),
@@ -791,6 +795,189 @@ out_cleanup:
 		return ((-value) << 4);
 	}
 
+
+
+	std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> getCalibrationParameters()
+	{
+		std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> calibrationParameters;
+		calibrationParameters.first = m_dmm->readChannel("temp0").value;
+		calibrationParameters.second = std::map<libm2k::CALIBRATION_PARAMETER, double>();
+
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_OFFSET_CH_1, m_adc_ch0_offset));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_OFFSET_CH_2, m_adc_ch1_offset));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_GAIN_CH_1, m_adc_ch0_gain));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_GAIN_CH_2, m_adc_ch1_gain));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_A_OFFSET, m_dac_a_ch_offset));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_B_OFFSET, m_dac_b_ch_offset));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_A_VLSB, m_dac_a_ch_vlsb));
+		calibrationParameters.second.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_B_VLSB, m_dac_b_ch_vlsb));
+
+		return calibrationParameters;
+	}
+
+	void setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters)
+	{
+		for (auto parameter : calibrationParameters) {
+			switch (parameter.first) {
+				case ADC_OFFSET_CH_1:
+					m_adc_ch0_offset = parameter.second;
+					break;
+				case ADC_OFFSET_CH_2:
+					m_adc_ch1_offset = parameter.second;
+					break;
+				case ADC_GAIN_CH_1:
+					m_adc_ch0_gain = parameter.second;
+					break;
+				case ADC_GAIN_CH_2:
+					m_adc_ch1_gain = parameter.second;
+					break;
+				case DAC_A_OFFSET:
+					m_dac_a_ch_offset = parameter.second;
+					break;
+				case DAC_B_OFFSET:
+					m_dac_b_ch_offset = parameter.second;
+					break;
+				case DAC_A_VLSB:
+					m_dac_a_ch_vlsb = parameter.second;
+					break;
+				case DAC_B_VLSB:
+					m_dac_b_ch_vlsb = parameter.second;
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	std::map<libm2k::CALIBRATION_PARAMETER, double> readFromFileCalibrationParameters(const std::string &serialNumber, const std::string &path)
+	{
+		std::ifstream file;
+		if (path.empty()) {
+			file.open("calibration_" + serialNumber, std::ifstream::in);
+		} else {
+			file.open(path, std::ifstream::in);
+		}
+
+		auto parameters = std::map<libm2k::CALIBRATION_PARAMETER, double>();
+		double temperature = m_dmm->readChannel("temp0").value;
+		temperature = round(temperature * 10) / 10;
+
+		std::string line, word;
+		double value;
+		while (file.good()) {
+			std::getline(file, line);
+			std::stringstream ss(line);
+			std::getline(ss, word, ',');
+			try {
+				value = std::stod(word);
+			} catch (std::exception &e) {
+				continue;
+			}
+			value = round(value * 10) / 10;
+			if (value >= temperature) {
+				auto values = std::vector<double>();
+
+				while (std::getline(ss, word, ',')) {
+					value = std::stod(word);
+					values.push_back(value);
+				}
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_OFFSET_CH_1, values[0]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_OFFSET_CH_2, values[1]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_GAIN_CH_1, values[2]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(ADC_GAIN_CH_2, values[3]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_A_OFFSET, values[4]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_B_OFFSET, values[5]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_A_VLSB, values[6]));
+				parameters.insert(std::pair<libm2k::CALIBRATION_PARAMETER, double>(DAC_B_VLSB, values[7]));
+
+				break;
+			}
+		}
+		file.close();
+		return parameters;
+	}
+
+	bool calibrateADC(const std::string &serialNumber, const std::string &path)
+	{
+		auto parameters = readFromFileCalibrationParameters(serialNumber, path);
+		if (parameters.empty()) {
+			m_adc_calibrated = false;
+			return false;
+		}
+
+		parameters.erase(DAC_A_OFFSET);
+		parameters.erase(DAC_B_OFFSET);
+		parameters.erase(DAC_A_VLSB);
+		parameters.erase(DAC_B_VLSB);
+
+		m_adc_channels_enabled.at(0) = m_m2k_adc->isChannelEnabled(0);
+		m_adc_channels_enabled.at(1) = m_m2k_adc->isChannelEnabled(1);
+
+		setCalibrationParameters(parameters);
+		updateAdcCorrections();
+
+		m_m2k_adc->enableChannel(0, m_adc_channels_enabled.at(0));
+		m_m2k_adc->enableChannel(1, m_adc_channels_enabled.at(1));
+
+		m_adc_calibrated = true;
+		return true;
+	}
+
+	bool calibrateDAC(const std::string &serialNumber, const std::string &path)
+	{
+		auto parameters = readFromFileCalibrationParameters(serialNumber, path);
+		if (parameters.empty()) {
+			m_dac_calibrated = false;
+			return false;
+		}
+
+		parameters.erase(ADC_OFFSET_CH_1);
+		parameters.erase(ADC_OFFSET_CH_2);
+		parameters.erase(ADC_GAIN_CH_1);
+		parameters.erase(ADC_GAIN_CH_2);
+
+		m_dac_channels_enabled.at(0) = m_m2k_dac->isChannelEnabled(0);
+		m_dac_channels_enabled.at(1) = m_m2k_dac->isChannelEnabled(1);
+
+		setCalibrationParameters(parameters);
+		updateDacCorrections();
+
+		m_m2k_dac->enableChannel(0, m_dac_channels_enabled.at(0));
+		m_m2k_dac->enableChannel(1, m_dac_channels_enabled.at(1));
+
+		m_dac_calibrated = true;
+		return true;
+	}
+
+	bool calibrateAll(const std::string &serialNumber, const std::string &path)
+	{
+		auto parameters = readFromFileCalibrationParameters(serialNumber, path);
+		if (parameters.empty()) {
+			m_adc_calibrated = false;
+			m_dac_calibrated = false;
+			return false;
+		}
+
+		m_adc_channels_enabled.at(0) = m_m2k_adc->isChannelEnabled(0);
+		m_adc_channels_enabled.at(1) = m_m2k_adc->isChannelEnabled(1);
+		m_dac_channels_enabled.at(0) = m_m2k_dac->isChannelEnabled(0);
+		m_dac_channels_enabled.at(1) = m_m2k_dac->isChannelEnabled(1);
+
+		setCalibrationParameters(parameters);
+		updateAdcCorrections();
+		updateDacCorrections();
+
+		m_m2k_adc->enableChannel(0, m_adc_channels_enabled.at(0));
+		m_m2k_adc->enableChannel(1, m_adc_channels_enabled.at(1));
+		m_m2k_dac->enableChannel(0, m_dac_channels_enabled.at(0));
+		m_m2k_dac->enableChannel(1, m_dac_channels_enabled.at(1));
+
+		m_adc_calibrated = true;
+		m_dac_calibrated = true;
+		return true;
+	}
+
+
 private:
 	bool m_cancel;
 
@@ -798,6 +985,7 @@ private:
 	M2kAnalogIn* m_m2k_adc;
 	M2kAnalogOut* m_m2k_dac;
 	M2kHardwareTrigger* m_m2k_trigger;
+	DMM *m_dmm;
 
 	int m_adc_ch0_offset;
 	int m_adc_ch1_offset;

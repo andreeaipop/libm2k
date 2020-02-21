@@ -29,6 +29,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <map>
 
 namespace libm2k {
 
@@ -36,7 +37,7 @@ class LIBM2K_API M2kCalibration
 {
 public:
 	M2kCalibration(struct iio_context* ctx, libm2k::analog::M2kAnalogIn* analogIn,
-		       libm2k::analog::M2kAnalogOut* analogOut);
+		       libm2k::analog::M2kAnalogOut* analogOut, libm2k::analog::DMM *dmm);
 	virtual ~M2kCalibration();
 
 	bool initialize();
@@ -70,6 +71,13 @@ public:
 	void updateDacCorrections();
 
 	bool setCalibrationMode(int);
+
+	std::pair<double, std::map<libm2k::CALIBRATION_PARAMETER, double>> getCalibrationParameters();
+	void setCalibrationParameters(std::map<libm2k::CALIBRATION_PARAMETER, double> &calibrationParameters);
+	bool calibrateADC(const std::string &serialNumber, const std::string &path = std::string());
+	bool calibrateDAC(const std::string &serialNumber, const std::string &path = std::string());
+	bool calibrateAll(const std::string &serialNumber, const std::string &path = std::string());
+
 
 protected:
 	class M2kCalibrationImpl;
