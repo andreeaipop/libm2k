@@ -95,6 +95,7 @@ namespace std {
 	%template(VectorVectorD) vector< vector<double> >;
 	%template(VectorVectorS) vector< vector<int> >;
 	%template(PairDD) std::pair<double, double>;
+	%template(PairDV) std::pair<double, std::vector<double>>;
 	%template(VectorPairDD) std::vector<std::pair<std::string, std::pair <double, double>>>;
 }
 
@@ -136,6 +137,7 @@ namespace std {
 	#include <libm2k/tools/uart.hpp>
 	#include <libm2k/tools/uart_extra.hpp>
 #endif
+
 	typedef std::vector<libm2k::analog::DMM_READING> DMMReading;
 	typedef std::vector<libm2k::analog::DMM*> DMMs;
 	typedef std::vector<libm2k::analog::M2kAnalogIn*> M2kAnalogIns;
@@ -143,7 +145,13 @@ namespace std {
 	typedef std::vector<libm2k::M2K_TRIGGER_CONDITION_ANALOG> M2kConditionAnalog;
 	typedef std::vector<libm2k::M2K_TRIGGER_CONDITION_DIGITAL> M2kConditionDigital;
 	typedef std::vector<libm2k::M2K_TRIGGER_MODE> M2kModes;
+	std::pair<double, std::map<enum libm2k::CALIBRATION_PARAMETER, double>> M2kCalibrationParameters;
 %}
+
+namespace std {
+	%template(PairParamD) std::pair<enum libm2k::CALIBRATION_PARAMETER, double>;
+	%template(MapParamD) std::map<enum libm2k::CALIBRATION_PARAMETER, double>;
+}
 
 #ifdef COMMUNICATION
 #ifdef SWIGCSHARP
@@ -263,6 +271,7 @@ namespace std {
 %template(M2kConditionAnalog) std::vector<libm2k::M2K_TRIGGER_CONDITION_ANALOG>;
 %template(M2kConditionDigital) std::vector<libm2k::M2K_TRIGGER_CONDITION_DIGITAL>;
 %template(M2kModes) std::vector<libm2k::M2K_TRIGGER_MODE>;
+%template(M2kCalibrationParameters) std::pair<double, std::map<enum libm2k::CALIBRATION_PARAMETER, double>>;
 
 #ifdef SWIGPYTHON
 	%template(IioBuffers) std::vector<struct iio_buffer*>;
