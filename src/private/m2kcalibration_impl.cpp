@@ -202,7 +202,8 @@ public:
 	bool calibrateADCoffset()
 	{
 		double gain = 1.3;
-		double range = 3.192;
+		//double range = 3.192;
+		double range = 3.23;
 		bool calibrated = false;
 		double voltage0, voltage1 = 0;
 		std::vector<std::vector<double>> ch_data = {};
@@ -245,8 +246,8 @@ public:
 		voltage0 = m_m2k_adc->convRawToVolts(ch0_avg, 1, 1);
 		voltage1 = m_m2k_adc->convRawToVolts(ch1_avg, 1, 1);
 
-		m_adc_ch0_offset = (int)(2048 - ((voltage0 * 4096 * gain) / range));
-		m_adc_ch1_offset = (int)(2048 - ((voltage1 * 4096 * gain) / range));
+		m_adc_ch0_offset = round(2048 - ((voltage0 * 4096 * gain) / range));
+		m_adc_ch1_offset = round(2048 - ((voltage1 * 4096 * gain) / range));
 
 		fine_tune(20, m_adc_ch0_offset, m_adc_ch1_offset, num_samples);
 
@@ -259,7 +260,8 @@ public:
 	bool calibrateADCgain()
 	{
 		int16_t tmp;
-		double vref1 = 0.46172;
+		//double vref1 = 0.46172;
+		double vref1 = 0.46154;
 		const unsigned int num_samples = 15e4;
 		double avg0, avg1;
 		bool calibrated = false;
@@ -532,8 +534,8 @@ out_cleanup:
 		double voltage1 = m_m2k_adc->convRawToVolts(
 					ch1_avg, m_adc_ch1_gain, 1);
 
-		m_dac_a_ch_offset = (int)(2048 - ((voltage0 * 9.06 ) / 0.002658));
-		m_dac_b_ch_offset = (int)(2048 - ((voltage1 * 9.06 ) / 0.002658));
+		m_dac_a_ch_offset = round(2048 - ((voltage0 * 9.1099 ) / 0.002678));
+		m_dac_b_ch_offset = round(2048 - ((voltage1 * 9.1099 ) / 0.002678));
 
 		m_ad5625_dev->setDoubleValue(0, m_dac_a_ch_offset, "raw", true);
 		m_ad5625_dev->setDoubleValue(1, m_dac_b_ch_offset, "raw", true);
@@ -615,8 +617,8 @@ out_cleanup:
 					ch1_avg, m_adc_ch1_gain, 1);
 
 		// Taking into account the voltage divider on the loopback path
-		voltage0 *= 9.06;
-		voltage1 *= 9.06;
+		voltage0 *= 9.1099;
+		voltage1 *= 9.1099;
 
 		m_dac_a_ch_vlsb = voltage0 / 1024;
 		m_dac_b_ch_vlsb = voltage1 / 1024;
